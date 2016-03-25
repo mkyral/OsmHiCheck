@@ -1,5 +1,11 @@
 <?php
 
+//cached old result
+if(isset($_GET['cache'])){ //{{{
+  echo file_get_contents("/tmp/osm.gp2.html");
+  exit;
+} // }}}
+
 $time_start = microtime(true);
 
 $gpx_file="/tmp/guideposts.gpx";
@@ -61,6 +67,7 @@ iframe#hiddenIframe {
 <ul>
 <li><a href="./?fetch">Fetch</a> DB from api.osm.cz to osm.fit.vutbr.cz</li>
 <li><a href="./?analyse">Analyse</a> current DB on osm.fit.vutbr.cz $db_time</li>
+<li><a href="./?cache">Show</a> last cached analyzed table</li>
 <li><a href="./?gpx">Download GPX</a> with guideposts without correct photos $gpx_time</li>
 <li><a href="stats.php">Show guideposts</a> statistics</li>
 </ul>
