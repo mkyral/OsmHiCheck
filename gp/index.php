@@ -41,6 +41,16 @@ echo <<<EOF
 <html>
 <header>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <script type="text/javascript" src="../js/jquery-1.11.2.min.js"></script>
+  <script type="text/javascript" src="../js/jquery.jeditable.js"></script>
+  <script type="text/javascript" charset="utf-8">
+    $(function() {
+      $(".click").editable("move.php",
+        { tooltip : "Click to edit...",
+          style   : "inherit"
+        });
+    });
+  </script>
 </header>
 <style>
 td { 
@@ -216,7 +226,13 @@ if(isset($_GET['analyse'])){ //{{{
     if(isset($gp_used[$p->id])) continue;
 
     $geom = preg_replace('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', '$2 $1', $p->geom);
-    echo '<tr><td><a href="http://api.openstreetmap.cz/table/id/'.$p->id.'">'.$p->id.'</a></td><td>'.$p->ref.'</td><td>'.$geom.'</td></tr>'."\n";
+    echo "<tr>\n";
+    echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$p->id.'">'.$p->id.'</a></td>';
+    echo '  <td>'.$p->ref.'</td>';
+    echo '  <td id="gpimg'.$p->id.'" class="click">'.$geom.'</td>';
+//style="display: inline">double
+
+    echo "</tr>\n";
   }
   echo "</table>";
 
