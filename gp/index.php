@@ -14,7 +14,7 @@ $gpx_time=file_exists($gpx_file) ? '(data from '.date('d.m.Y H:i', filemtime($gp
 $db_time='(data from '.trim(file_get_contents("../last_update.txt")).')';
 
 //output prepared GPX if any
-if(isset($_GET['gpx'])){ //{{{
+if(isset($_GET['gpx']) || isset($_GET['get_gpx'])){ //{{{
 
   if(file_exists($gpx_file)){
     header('Content-Description: File Transfer');
@@ -78,7 +78,7 @@ iframe#hiddenIframe {
 <li><a href="./?fetch">Fetch</a> DB from api.osm.cz to osm.fit.vutbr.cz</li>
 <li><a href="./?analyse">Analyse</a> current DB on osm.fit.vutbr.cz $db_time</li>
 <li><a href="./?cache">Show</a> last cached analyzed table</li>
-<li><a href="./?gpx">Download GPX</a> with guideposts without correct photos $gpx_time</li>
+<li><a href="./?get.gpx">Download GPX</a> with guideposts without correct photos $gpx_time</li>
 <li><a href="stats.php">Show guideposts</a> statistics</li>
 </ul>
 
@@ -221,6 +221,7 @@ if(isset($_GET['analyse'])){ //{{{
   echo "<p>Guideposts photo entries (total:".count($gp).", used: ".count($gp_used).", unused: ".(count($gp)-count($gp_used)).")</p>\n";
 
   echo "<table>";
+  echo "<tr><th>img ID</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
   foreach($gp as $p){
     //skip used images and only left unused ones
     if(isset($gp_used[$p->id])) continue;
@@ -230,8 +231,7 @@ if(isset($_GET['analyse'])){ //{{{
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$p->id.'">'.$p->id.'</a></td>';
     echo '  <td>'.$p->ref.'</td>';
     echo '  <td id="gpimg'.$p->id.'" class="click">'.$geom.'</td>';
-//style="display: inline">double
-
+    echo '  <td id="gpapi'.$p->id.' class="click">'.$geom.'</td>';
     echo "</tr>\n";
   }
   echo "</table>";
