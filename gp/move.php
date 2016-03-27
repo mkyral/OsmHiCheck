@@ -24,6 +24,23 @@ if(isset($_POST['id'])){
     echo " UPDATE `guidepost` SET `lat` = $lat, `lon` = $lon WHERE `id` = $id;";
   } else if ($type == 'gpapi') {
     echo " POST /table/move/$id/$lat/$lon";
+
+    $url = 'http://api.openstreetmap.cz/table/move';
+    $fields = "id=$id&lat=$lat&lon=$lon";
+
+    $ch = curl_init();
+
+    //set the url, number of POST vars, POST data
+    curl_setopt($ch,CURLOPT_URL, $url);
+    curl_setopt($ch,CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch,CURLOPT_POST, 1);
+    curl_setopt($ch,CURLOPT_POSTFIELDS, $fields);
+
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    echo ":$result";
+
   } else {
     echo 'Unknown ID!';
   }

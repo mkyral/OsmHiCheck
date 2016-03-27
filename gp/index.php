@@ -91,9 +91,10 @@ if(isset($_GET['fetch'])){ //{{{
   $query .= $response;
 
   $query .= "'::json AS fc)
-    INSERT INTO hicheck.guideposts (\"id\", \"url\", \"ref\", \"geom\") (
+    INSERT INTO hicheck.guideposts (\"id\", \"by\", \"url\", \"ref\", \"geom\") (
     SELECT 
       CAST (feat->'properties'->>'id' AS int),
+      feat->'properties'->>'attribution' AS by,
       feat->'properties'->>'url',
       feat->'properties'->>'ref',
       ST_SetSRID(ST_GeomFromGeoJSON(feat->>'geometry'), 4326)
@@ -113,9 +114,18 @@ if(isset($_GET['fetch'])){ //{{{
 
 if(isset($_GET['analyse'])){ //{{{
   
-  $query="SELECT id, ref, ST_AsText(geom) AS geom FROM hicheck.guideposts";
+  //skip infotables from unused guideposts
+  $infotab_all = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/infotabule?output=json'));
+  foreach($infotab_all as $it){
+    $infotab[$it[0]] = 1;
+  }
+
+  $query="SELECT id, ref, by, ST_AsText(geom) AS geom FROM hicheck.guideposts";
   $res = pg_query($query);
   while ($data = pg_fetch_object($res)) {
+    //skip all infotables in further processing
+    if(isset($infotab[$data->id])) continue;
+
     $gp[$data->id] = $data;
   }
   pg_free_result($res);
@@ -221,17 +231,18 @@ if(isset($_GET['analyse'])){ //{{{
   echo "<p>Guideposts photo entries (total:".count($gp).", used: ".count($gp_used).", unused: ".(count($gp)-count($gp_used)).")</p>\n";
 
   echo "<table>";
-  echo "<tr><th>img ID</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
+  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
   foreach($gp as $p){
     //skip used images and only left unused ones
     if(isset($gp_used[$p->id])) continue;
 
-    $geom = preg_replace('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', '$2 $1', $p->geom);
+    $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $p->geom);
     echo "<tr>\n";
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$p->id.'">'.$p->id.'</a></td>';
+    echo '  <td>'.$p->by.'</td>';
     echo '  <td>'.$p->ref.'</td>';
     echo '  <td id="gpimg'.$p->id.'" class="click">'.$geom.'</td>';
-    echo '  <td id="gpapi'.$p->id.' class="click">'.$geom.'</td>';
+    echo '  <td id="gpapi'.$p->id.'" class="click">'.$geom.'</td>';
     echo "</tr>\n";
   }
   echo "</table>";
