@@ -9,8 +9,10 @@ if(isset($_GET['cache'])){ //{{{
 $time_start = microtime(true);
 
 $gpx_file="/tmp/guideposts.gpx";
+$json_file="/tmp/guideposts.json";
 
 $gpx_time=file_exists($gpx_file) ? '(data from '.date('d.m.Y H:i', filemtime($gpx_file)).')' : '';
+$json_time=file_exists($json_file) ? '(data from '.date('d.m.Y H:i', filemtime($json_file)).')' : '';
 $db_time='(data from '.trim(file_get_contents("../last_update.txt")).')';
 
 //output prepared GPX if any
@@ -31,6 +33,44 @@ if(isset($_GET['gpx']) || isset($_GET['get_gpx'])){ //{{{
   }
 }
 //}}}
+
+//output prepared JSON if any
+if(isset($_GET['json']) || isset($_GET['get_json'])){ //{{{
+
+  if(file_exists($json_file)){
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/json');
+    header('Content-Disposition: attachment; filename="'.basename($json_file).'"');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+    header('Content-Length: '.filesize($json_file));
+    readfile($json_file);
+    exit;
+  } else {
+    echo "Generate JSON by running analysis!\n";
+  }
+}
+//}}}
+
+function push_geojson(&$json, $id, $lon, $lat, $name, $desc){ //{{{
+ $feature = array(
+        'id' => $id,
+        'type' => 'Feature', 
+        'geometry' => array(
+            'type' => 'Point',
+            # Pass Longitude and Latitude Columns here
+            'coordinates' => array($lon, $lat)
+        ),
+        # Pass other attribute columns here
+        'properties' => array(
+            'name' => $name,
+            'description' => $desc,
+            )
+        );
+    # Add feature arrays to feature collection array
+    array_push($json['features'], $feature);
+} //}}}
 
 require_once dirname(__FILE__).'/../db_conf.php';
 $db = pg_connect("host=".SERVER." dbname=".DATABASE." user=".USERNAME." password=".PASSWORD);
@@ -79,6 +119,7 @@ iframe#hiddenIframe {
 <li><a href="./?analyse">Analyse</a> current DB on osm.fit.vutbr.cz $db_time</li>
 <li><a href="./?cache">Show</a> last cached analyzed table</li>
 <li><a href="./?get.gpx">Download GPX</a> with guideposts without correct photos $gpx_time</li>
+<li><a href="./?get.json">Download JSON</a> with guideposts without correct photos $json_time</li>
 <li><a href="stats.php">Show guideposts</a> statistics</li>
 </ul>
 
@@ -158,6 +199,12 @@ if(isset($_GET['analyse'])){ //{{{
   fwrite($gpx, '<gpx version="1.1" creator="Locus Android"'."\n");
   fwrite($gpx, '  xmlns="http://www.topografix.com/GPX/1/1"'."\n");
   fwrite($gpx, '  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">'."\n");
+  
+  //build GeoJSON feature collection array
+  $geojson = array(
+    'type'      => 'FeatureCollection',
+    'features'  => array()
+  );
 
   echo "<p>Nodes with information=guidepost (".count($no).")</p>\n";
 
@@ -178,23 +225,29 @@ if(isset($_GET['analyse'])){ //{{{
     }
     echo ">";
 
-    //check if need to put to GPX
-    $geom = preg_replace('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', 'lat="$2" lon="$1"', $n->geom);
+    //check if need to put to GPX and GeoJSON
+    preg_match('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', $n->geom, $matches);
+    $lat = $matches[1];
+    $lon = $matches[2];
     $name = isset($n->name) ? htmlspecialchars($n->name) : 'n'.$n->id;
     if(isset($close[$n->id])) {
       if (!isset($n->ref)){
         //gp with image but without REF
-        fwrite($gpx, "<wpt $geom>"."\n");
+        fwrite($gpx, "<wpt lat=\"$lat\" lon=\"$lon\">"."\n");
         fwrite($gpx, "<name>$name</name>"."\n");
         fwrite($gpx, '<sym>transport-accident</sym>'."\n");
         fwrite($gpx, '</wpt>'."\n");
+
+        push_geojson($geojson, $n->id, $lat, $lon, $name, 'guidepost with image but no REF');
       }
     } else {
       //gp without image
-      fwrite($gpx, "<wpt $geom>"."\n");
+      fwrite($gpx, "<wpt lat=\"$lat\" lon=\"$lon\">"."\n");
       fwrite($gpx, "<name>$name</name>"."\n");
       fwrite($gpx, '<sym>misc-sunny</sym>'."\n");
       fwrite($gpx, '</wpt>'."\n");
+
+      push_geojson($geojson, $n->id, $lat, $lon, $name, 'guidepost without image');
     }
 
     //POINT(12.5956722222222 49.6313222222222)
@@ -249,6 +302,11 @@ if(isset($_GET['analyse'])){ //{{{
 
   fwrite($gpx, '</gpx>'."\n");
   fclose($gpx);
+
+  $json=fopen($json_file, 'w');
+  fwrite($json, json_encode($geojson, JSON_NUMERIC_CHECK));
+  fclose($json);
+
 } // }}}
 
 $time_end = microtime(true);
