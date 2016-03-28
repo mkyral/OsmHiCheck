@@ -283,6 +283,23 @@ if(isset($_GET['analyse'])){ //{{{
   
   echo "<p>Guideposts photo entries (total:".count($gp).", used: ".count($gp_used).", unused: ".(count($gp)-count($gp_used)).")</p>\n";
 
+  //save current stats to DB
+  $node_total = count($no);
+  $node_ok = $gp_class['ok'];
+  $node_cor = $gp_class['cor'];
+  $node_bad = $gp_class['bad'];
+  $img_total = count($gp);
+  $img_used = count($gp_used);
+
+  $date = date('Ymd');
+  $check_q = "SELECT id FROM hicheck.gp_stats WHERE date='$date'";
+  if(pg_num_rows(pg_query($check_q))==0){
+    pg_query("INSERT INTO hicheck.gp_stats (date, node_total, img_total, img_used, node_ok, node_bad, node_cor) 
+    VALUES('$date','$node_total','$img_total','$img_used','$node_ok','$node_bad','$node_cor')");
+  } else {
+    pg_query("UPDATE hicheck.gp_stats SET node_total='$node_total',img_total='$img_total',img_used='$img_used',node_ok='$node_ok',node_bad='$node_bad',node_cor='$node_cor' WHERE date='$date'");
+  }
+
   echo "<table>";
   echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
   foreach($gp as $p){

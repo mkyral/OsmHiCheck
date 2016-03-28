@@ -88,7 +88,6 @@ else
 	echo "Database updated. [$ret]" >> $LOGFILE
 	echo `date '+%d.%m.%Y %H:%M'` > $WEB_ROOT/last_update.txt
 	php $WEB_ROOT/tables/php/saveStats.php
-	php $WEB_ROOT/gp/saveStats.php
 fi
 
 #remove old unused stuff
