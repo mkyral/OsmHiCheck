@@ -156,16 +156,26 @@ if(isset($_GET['fetch'])){ //{{{
 if(isset($_GET['analyse'])){ //{{{
   
   //skip infotables from unused guideposts
-  $infotab_all = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/infotabule?output=json'));
-  foreach($infotab_all as $it){
-    $infotab[$it[0]] = 1;
+  $infotab = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/infotabule?output=json'));
+  foreach($infotab as $i){
+    $img_skip[$i[0]] = 1;
+  }
+  //skip maps from unused guideposts
+  $maps = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/mapa?output=json'));
+  foreach($maps as $i){
+    $img_skip[$i[0]] = 1;
+  }
+  //skip cyklo GPs from unused guideposts
+  $cyklo = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/cyklo?output=json'));
+  foreach($cyklo as $i){
+    $img_skip[$i[0]] = 1;
   }
 
   $query="SELECT id, ref, by, ST_AsText(geom) AS geom FROM hicheck.guideposts";
   $res = pg_query($query);
   while ($data = pg_fetch_object($res)) {
-    //skip all infotables in further processing
-    if(isset($infotab[$data->id])) continue;
+    //skip all unusable images based on tags
+    if(isset($img_skip[$data->id])) continue;
 
     $gp[$data->id] = $data;
   }
