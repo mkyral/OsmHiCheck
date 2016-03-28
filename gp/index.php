@@ -227,8 +227,8 @@ if(isset($_GET['analyse'])){ //{{{
 
     //check if need to put to GPX and GeoJSON
     preg_match('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', $n->geom, $matches);
-    $lat = $matches[1];
-    $lon = $matches[2];
+    $lon = $matches[1];
+    $lat = $matches[2];
     $name = isset($n->name) ? htmlspecialchars($n->name) : 'n'.$n->id;
     if(isset($close[$n->id])) {
       if (!isset($n->ref)){
