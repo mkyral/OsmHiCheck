@@ -170,6 +170,16 @@ if(isset($_GET['analyse'])){ //{{{
   foreach($cyklo as $i){
     $img_skip[$i[0]] = 1;
   }
+  //skip unreadable GP images
+  $unread = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/necitelne?output=json'));
+  foreach($unread as $i){
+    $img_skip[$i[0]] = 1;
+  }
+  //skip marking with no GP on img
+  $mark = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/znaceni?output=json'));
+  foreach($mark as $i){
+    $img_skip[$i[0]] = 1;
+  }
 
   $query="SELECT id, ref, by, ST_AsText(geom) AS geom FROM hicheck.guideposts";
   $res = pg_query($query);
