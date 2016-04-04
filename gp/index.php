@@ -245,6 +245,7 @@ if(isset($_GET['analyse'])){ //{{{
         //gp with image but without REF
         fwrite($gpx, "<wpt lat=\"$lat\" lon=\"$lon\">"."\n");
         fwrite($gpx, "<name>$name</name>"."\n");
+        fwrite($gpx, "<desc>n".$n->id."</desc>"."\n");
         fwrite($gpx, '<sym>transport-accident</sym>'."\n");
         fwrite($gpx, '</wpt>'."\n");
 
@@ -254,6 +255,7 @@ if(isset($_GET['analyse'])){ //{{{
       //gp without image
       fwrite($gpx, "<wpt lat=\"$lat\" lon=\"$lon\">"."\n");
       fwrite($gpx, "<name>$name</name>"."\n");
+      fwrite($gpx, "<desc>n".$n->id."</desc>"."\n");
       fwrite($gpx, '<sym>misc-sunny</sym>'."\n");
       fwrite($gpx, '</wpt>'."\n");
 
