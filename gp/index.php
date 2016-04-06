@@ -181,7 +181,8 @@ if(isset($_GET['analyse'])){ //{{{
     $img_skip[$i[0]] = 1;
   }
 
-  $query="SELECT id, ref, by, ST_AsText(geom) AS geom FROM hicheck.guideposts";
+  $query="SELECT id, ref, by, ST_AsText(geom) AS geom FROM hicheck.guideposts
+          WHERE geom && ST_MakeEnvelope(12.09, 51.06, 18.87, 48.55, 4326)";
   $res = pg_query($query);
   while ($data = pg_fetch_object($res)) {
     //skip all unusable images based on tags
