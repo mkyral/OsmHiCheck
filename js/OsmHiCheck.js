@@ -367,7 +367,7 @@ function initMap() {
     /** zobrazeni udaje o aktualnosti a odkazu na github v attribution*/
     jQuery.get("../last_update.txt", function (data) {
         var x= document.getElementsByClassName('leaflet-control-attribution');
-        x[0].innerHTML = "<a href='https://github.com/pesvan/OsmHiCheck'>Github</a> | OSM data updated: "+data+" <br /> "+x[0].innerHTML;
+        x[0].innerHTML = "<a href='https://github.com/tkas/OsmHiCheck'>Github</a> | OSM data updated: "+data+" <br /> "+x[0].innerHTML;
     });
 }
 

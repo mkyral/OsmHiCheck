@@ -30,6 +30,9 @@ Instalace vlastni instance(v zavorkach odkazy do textove casti bakalarske prace)
 Zdrojovy kod je mj. dostupny take na GitHubu:
 https://github.com/pesvan/OsmHiCheck
 
+Aktualni vetev:
+https://github.com/tkas/OsmHiCheck
+
 
 Adresarova struktura aplikace:
 src/ - root projektu

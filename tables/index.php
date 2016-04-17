@@ -36,7 +36,7 @@ if(!(isset($_GET['pg']))){
         </div>
     </div>
     <div class="footer">
-      <a href='https://github.com/pesvan/OsmHiCheck'>Github</a> | OSM data updated: <?php include "../last_update.txt" ?>
+      <a href='https://github.com/tkas/OsmHiCheck'>Github</a> | OSM data updated: <?php include "../last_update.txt" ?>
     </div>
 </body>
 
