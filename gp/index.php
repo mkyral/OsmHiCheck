@@ -36,7 +36,32 @@ if(isset($_GET['gpx']) || isset($_GET['get_gpx'])){ //{{{
 
 //output prepared JSON if any
 if(isset($_GET['json']) || isset($_GET['get_json'])){ //{{{
+  
+  //generate just part of json file
+  if(isset($_GET['bbox'])){
+    list($xmin,$ymin,$xmax,$ymax) = explode(',', $_GET['bbox']);
+    $j = json_decode(file_get_contents($json_file));
+    foreach($j->features as $key => $item){
+      $coord = $item->geometry->coordinates;
+      if ($xmin < $coord[0] && $xmax > $coord[0] && $ymin < $coord[1] && $ymax > $coord[1]) 
+        ;//print_r($coord);
+      else {
+        //echo 'removing'.$item->properties->name;
+        unset($j->features[$key]);
+      }
+    };
+    $j->features = array_values($j->features);
 
+    header('Content-Type: application/json');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
+
+    echo json_encode($j);
+    exit;
+  }
+
+  //read the whole file of no bbox
   if(file_exists($json_file)){
     header('Content-Description: File Transfer');
     header('Content-Type: application/json');
@@ -53,7 +78,7 @@ if(isset($_GET['json']) || isset($_GET['get_json'])){ //{{{
 }
 //}}}
 
-function push_geojson(&$json, $id, $lon, $lat, $name, $desc){ //{{{
+function push_geojson(&$json, $id, $lon, $lat, $name, $class){ //{{{
  $feature = array(
         'id' => $id,
         'type' => 'Feature', 
@@ -65,7 +90,7 @@ function push_geojson(&$json, $id, $lon, $lat, $name, $desc){ //{{{
         # Pass other attribute columns here
         'properties' => array(
             'name' => $name,
-            'description' => $desc,
+            'class' => $class,
             )
         );
     # Add feature arrays to feature collection array
@@ -260,7 +285,7 @@ if(isset($_GET['analyse'])){ //{{{
         fwrite($gpx, '<sym>transport-accident</sym>'."\n");
         fwrite($gpx, '</wpt>'."\n");
 
-        push_geojson($geojson, $n->id, $lon, $lat, $name, 'guidepost with image but no REF');
+        push_geojson($geojson, $n->id, $lon, $lat, $name, 'noref');
       }
     } else {
       //gp without image
@@ -270,7 +295,7 @@ if(isset($_GET['analyse'])){ //{{{
       fwrite($gpx, '<sym>misc-sunny</sym>'."\n");
       fwrite($gpx, '</wpt>'."\n");
 
-      push_geojson($geojson, $n->id, $lon, $lat, $name, 'guidepost without image');
+      push_geojson($geojson, $n->id, $lon, $lat, $name, 'missing');
     }
 
     //POINT(12.5956722222222 49.6313222222222)
