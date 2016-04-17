@@ -260,7 +260,7 @@ if(isset($_GET['analyse'])){ //{{{
         fwrite($gpx, '<sym>transport-accident</sym>'."\n");
         fwrite($gpx, '</wpt>'."\n");
 
-        push_geojson($geojson, $n->id, $lat, $lon, $name, 'guidepost with image but no REF');
+        push_geojson($geojson, $n->id, $lon, $lat, $name, 'guidepost with image but no REF');
       }
     } else {
       //gp without image
@@ -270,7 +270,7 @@ if(isset($_GET['analyse'])){ //{{{
       fwrite($gpx, '<sym>misc-sunny</sym>'."\n");
       fwrite($gpx, '</wpt>'."\n");
 
-      push_geojson($geojson, $n->id, $lat, $lon, $name, 'guidepost without image');
+      push_geojson($geojson, $n->id, $lon, $lat, $name, 'guidepost without image');
     }
 
     //POINT(12.5956722222222 49.6313222222222)
