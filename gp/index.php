@@ -295,7 +295,13 @@ if(isset($_GET['analyse'])){ //{{{
       fwrite($gpx, '<sym>misc-sunny</sym>'."\n");
       fwrite($gpx, '</wpt>'."\n");
 
-      push_geojson($geojson, $n->id, $lon, $lat, $name, 'missing');
+      if (!isset($n->ref)){
+        //GP without photo and ref
+        push_geojson($geojson, $n->id, $lon, $lat, $name, 'missing');
+      } else {
+        //GP without image but with some ref
+        push_geojson($geojson, $n->id, $lon, $lat, $name, 'noimg');
+      }
     }
 
     //POINT(12.5956722222222 49.6313222222222)
