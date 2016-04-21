@@ -121,9 +121,9 @@ echo <<<EOF
 td { 
   border: 1px solid black;
 }
-tr.ok { background-color:#b0ffa0; }
-tr.bad { background-color:#ffa090; }
-tr.cor { background-color:#ff5010; }
+.ok { background-color:#b0ffa0; }
+.bad { background-color:#ffa090; }
+.cor { background-color:#ff5010; }
 table { 
   border-collapse: collapse;
   font-size: 9pt;
@@ -329,10 +329,10 @@ if(isset($_GET['analyse'])){ //{{{
   echo "</table>";
 
   echo "<p>Guideposts nodes (total:".count($no)
-                             .", OK: ".$gp_class['ok']
-                             .", have photo but no ref: ".$gp_class['cor']
-                             .", missing photo and ref: ".$gp_class['bad']
-                             .", have ref but no photo: ".(count($no) - $gp_class['ok'] - $gp_class['cor'] - $gp_class['bad'])
+                             .', <span class="ok">OK: '.$gp_class['ok'].'</span>'
+                             .', <span class="cor">have photo but no ref: '.$gp_class['cor'].'</span>'
+                             .', <span class="bad">missing photo and ref: '.$gp_class['bad'].'</span>'
+                             .', have ref but no photo: '.(count($no) - $gp_class['ok'] - $gp_class['cor'] - $gp_class['bad'])
                              .")</p>\n";
   
   echo "<p>Guideposts photo entries (total:".count($gp).", used: ".count($gp_used).", unused: ".(count($gp)-count($gp_used)).")</p>\n";
