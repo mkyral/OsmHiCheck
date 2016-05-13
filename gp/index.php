@@ -1,5 +1,36 @@
 <?php
 
+function show_nodes($where, $class){ //{{{
+  echo "<table>";
+  echo '<tr><th width="7%">node ID</th><th width="11%">node coord</th><th width="12%">node ref</th><th>images</th></tr>'."\n";
+
+  $query="SELECT nodeid, ref, ST_AsText(geom) AS geom, img FROM hicheck.gp_analyze WHERE ".$where;
+  $res = pg_query($query);
+  while ($row = pg_fetch_object($res)) {
+    //check for row class - OK (have ref and img)
+    echo '<tr class="'.$class.'">'."\n";
+
+    $geom = preg_replace('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', '$2&nbsp$1', $row->geom);
+    echo "<td><a href=\"http://openstreetmap.org/node/".$row->nodeid."\">".$row->nodeid."</a></td>\n";
+    echo "<td><a target=\"hiddenIframe\"
+    href=\"http://localhost:8111/load_object?objects=n".$row->nodeid."\">".$geom."</a></td>\n";
+    echo "<td>".$row->ref."</td>\n";
+    echo '<td>';
+    foreach(explode(',', $row->img) as $i){
+      if($i == "") continue;
+
+      list($imgid,$dist,$imgref) = explode(':', $i);
+      echo '<a href="http://api.openstreetmap.cz/table/id/'.$imgid.'">'.$imgid.'</a> ('.sprintf("%0.2f", $dist)."m, $imgref) ";
+    }
+    echo "</td>\n";
+
+    echo "</tr>\n";
+  }
+  pg_free_result($res);
+
+  echo "</table>";
+} //}}}
+
 //cached old result
 if(isset($_GET['cache'])){ //{{{
   echo file_get_contents("/tmp/osm.gp2.html");
@@ -142,7 +173,7 @@ iframe#hiddenIframe {
 <ul>
 <li><a href="./?fetch">Fetch</a> DB from api.osm.cz to osm.fit.vutbr.cz</li>
 <li><a href="./?analyse">Analyse</a> current DB on osm.fit.vutbr.cz $db_time</li>
-<li><a href="./?cache">Show</a> last cached analyzed table</li>
+<li><a href="./?all">Show</a> last cached analyzed table (<a href="./?ok">OK</a>, <a href="./?bad">BAD</a>, <a href="./?cor">COR</a>)</li>
 <li><a href="./?get.gpx">Download GPX</a> with guideposts without correct photos $gpx_time</li>
 <li><a href="./?get.json">Download JSON</a> with guideposts without correct photos $json_time</li>
 <li><a href="stats.php">Show guideposts</a> statistics</li>
@@ -241,7 +272,7 @@ if(isset($_GET['analyse'])){ //{{{
   
   //prepare GPX header
   $gpx=fopen($gpx_file, 'w');
-  fwrite($gpx, '<?xml version="1.0" encoding="utf-8" standalone="yes"?>'."\n");
+  fwrite($gpx, '<?xml version="1.0" encoding="utf-8" standalone="yes" '.'?'.">\n");
   fwrite($gpx, '<gpx version="1.1" creator="Locus Android"'."\n");
   fwrite($gpx, '  xmlns="http://www.topografix.com/GPX/1/1"'."\n");
   fwrite($gpx, '  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">'."\n");
@@ -252,7 +283,7 @@ if(isset($_GET['analyse'])){ //{{{
     'features'  => array()
   );
 
-  echo "<p>Nodes with information=guidepost (".count($no).")</p>\n";
+  pg_query("TRUNCATE TABLE hicheck.gp_analyze");
 
   $gp_class['ok']=0;
   $gp_class['cor']=0;
@@ -306,15 +337,19 @@ if(isset($_GET['analyse'])){ //{{{
 
     //POINT(12.5956722222222 49.6313222222222)
     $geom = preg_replace('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', '$2 $1', $n->geom);
+    $img = '';
     echo "<td><a href=\"http://openstreetmap.org/node/".$n->id."\">".$n->id."</a></td>";
     echo "<td><a target=\"hiddenIframe\" href=\"http://localhost:8111/load_object?objects=n".$n->id."\">".$geom."</a></td><td>".$n->ref."</td>";
     if(isset($close[$n->id])) {
       echo '<td>';
       foreach($close[$n->id] as $d){
         $g_id = $d->g_id;
+        $ref = isset($gp[$g_id]) ? $gp[$g_id]->ref : '';
         $dist = sprintf("%0.2f", $d->dist);
+        $img .= "$g_id:".$d->dist.":$ref,";
+
         echo '<a href="http://api.openstreetmap.cz/table/id/'.$g_id.'">'.$g_id.'</a>';
-        echo '('.$dist.'m, '.$gp[$g_id]->ref.') ';
+        echo '('.$dist.'m, '.$ref.') ';
 
         $gp_used[$g_id] = 1;
       }
@@ -325,6 +360,12 @@ if(isset($_GET['analyse'])){ //{{{
       echo '<td></td>'."\n";
     }
     echo "</tr>";
+    
+    //put result into a table
+    $query = "INSERT INTO hicheck.gp_analyze (nodeid, geom, ref, img) VALUES('"
+              .$n->id."',ST_GeomFromText('".$n->geom."', 4326),'".$n->ref."','$img')";
+    //error_log("Q: $query");
+    $res = pg_query($query);
   }
   echo "</table>";
 
@@ -378,6 +419,79 @@ if(isset($_GET['analyse'])){ //{{{
   fwrite($json, json_encode($geojson, JSON_NUMERIC_CHECK));
   fclose($json);
 
+} // }}}
+
+//show all OSM nodes
+if(isset($_GET['all'])){ //{{{
+  $gp_class['ok']=0;
+  $gp_class['cor']=0;
+  $gp_class['bad']=0;
+
+  echo "<table>";
+  echo '<tr><th width="7%">node ID</th><th width="11%">node coord</th><th width="12%">node ref</th><th>images</th></tr>'."\n";
+
+  $query="SELECT nodeid, ref, ST_AsText(geom) AS geom, img FROM hicheck.gp_analyze";
+  $res = pg_query($query);
+  $total = pg_num_rows($res);
+  while ($row = pg_fetch_object($res)) {
+    //check for row class - OK (have ref and img)
+    echo "<tr";
+    if($row->ref != "" && $row->img != ""){
+      $gp_class['ok']++; echo ' class="ok"';
+    } 
+    if ($row->ref == "" && $row->img == ""){
+      $gp_class['bad']++; echo ' class="bad"';
+    }
+    if ($row->ref == "" && $row->img != ""){
+      $gp_class['cor']++; echo ' class="cor"';
+    }
+    echo ">\n";
+
+    $geom = preg_replace('/POINT\(([-0-9.]{1,8})[0-9]* ([-0-9.]{1,8})[0-9]*\)/', '$2&nbsp$1', $row->geom);
+    echo "<td><a href=\"http://openstreetmap.org/node/".$row->nodeid."\">".$row->nodeid."</a></td>\n";
+    echo "<td><a target=\"hiddenIframe\"
+    href=\"http://localhost:8111/load_object?objects=n".$row->nodeid."\">".$geom."</a></td>\n";
+    echo "<td>".$row->ref."</td>\n";
+    echo '<td>';
+    foreach(explode(',', $row->img) as $i){
+      if($i == "") continue;
+
+      list($imgid,$dist,$imgref) = explode(':', $i);
+      echo '<a href="http://api.openstreetmap.cz/table/id/'.$imgid.'">'.$imgid.'</a> ('.sprintf("%0.2f", $dist)."m, $imgref) ";
+    }
+    echo "</td>\n";
+
+    echo "</tr>\n";
+  }
+  pg_free_result($res);
+
+  echo "</table>";
+
+  echo "<p>Guideposts nodes (total:".$total
+                             .', <span class="ok">OK: '.$gp_class['ok'].'</span>'
+                             .', <span class="cor">have photo but no ref: '.$gp_class['cor'].'</span>'
+                             .', <span class="bad">missing photo and ref: '.$gp_class['bad'].'</span>'
+                             .', have ref but no photo: '.($total - $gp_class['ok'] - $gp_class['cor'] - $gp_class['bad'])
+                             .")</p>\n";
+  exit;
+} // }}}
+
+//show OK OSM nodes
+if(isset($_GET['ok'])){ //{{{
+  show_nodes("ref != '' AND img != ''", "ok");
+  exit;
+} // }}}
+
+//show BAD OSM nodes
+if(isset($_GET['bad'])){ //{{{
+  show_nodes("ref = '' AND img = ''", "bad");
+  exit;
+} // }}}
+
+//show CHECK OSM nodes
+if(isset($_GET['cor'])){ //{{{
+  show_nodes("ref = '' AND img != ''", "cor");
+  exit;
 } // }}}
 
 $time_end = microtime(true);
