@@ -1,11 +1,15 @@
 <?php
 
 function show_nodes($where, $class){ //{{{
-  echo "<table>";
-  echo '<tr><th width="7%">node ID</th><th width="11%">node coord</th><th width="12%">node ref</th><th>images</th></tr>'."\n";
 
   $query="SELECT nodeid, ref, ST_AsText(geom) AS geom, img FROM hicheck.gp_analyze WHERE ".$where;
   $res = pg_query($query);
+
+  echo "<p>".pg_num_rows($res)." entries in table</p>\n";
+
+  echo "<table>";
+  echo '<tr><th width="7%">node ID</th><th width="11%">node coord</th><th width="12%">node ref</th><th>images</th></tr>'."\n";
+
   while ($row = pg_fetch_object($res)) {
     //check for row class - OK (have ref and img)
     echo '<tr class="'.$class.'">'."\n";
@@ -16,7 +20,7 @@ function show_nodes($where, $class){ //{{{
     href=\"http://localhost:8111/load_object?objects=n".$row->nodeid."\">".$geom."</a></td>\n";
     echo "<td>".$row->ref."</td>\n";
     echo '<td>';
-    foreach(explode(',', $row->img) as $i){
+    foreach(explode('|', $row->img) as $i){
       if($i == "") continue;
 
       list($imgid,$dist,$imgref) = explode(':', $i);
@@ -346,7 +350,7 @@ if(isset($_GET['analyse'])){ //{{{
         $g_id = $d->g_id;
         $ref = isset($gp[$g_id]) ? $gp[$g_id]->ref : '';
         $dist = sprintf("%0.2f", $d->dist);
-        $img .= "$g_id:".$d->dist.":$ref,";
+        $img .= "$g_id:".$d->dist.":$ref|";
 
         echo '<a href="http://api.openstreetmap.cz/table/id/'.$g_id.'">'.$g_id.'</a>';
         echo '('.$dist.'m, '.$ref.') ';
@@ -453,7 +457,7 @@ if(isset($_GET['all'])){ //{{{
     href=\"http://localhost:8111/load_object?objects=n".$row->nodeid."\">".$geom."</a></td>\n";
     echo "<td>".$row->ref."</td>\n";
     echo '<td>';
-    foreach(explode(',', $row->img) as $i){
+    foreach(explode('|', $row->img) as $i){
       if($i == "") continue;
 
       list($imgid,$dist,$imgref) = explode(':', $i);
