@@ -35,6 +35,36 @@ function show_nodes($where, $class){ //{{{
   echo "</table>";
 } //}}}
 
+function show_unused_img(){ //{{{
+  global $img_file;
+
+  $img_ids = rtrim(file_get_contents($img_file), ', ');
+  //format is NUM, NUM, NUM, 
+  if(!preg_match('/^[0-9, ]*$/', $img_ids)) $img_ids = '';
+
+  $query="SELECT id, by, ref, ST_AsText(geom) AS geom FROM hicheck.guideposts WHERE id IN (".$img_ids.")";
+  $res = pg_query($query);
+  $total = pg_num_rows($res);
+
+  echo "<p>".pg_num_rows($res)." entries in table</p>\n";
+  echo "<table>";
+  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
+
+  while ($row = pg_fetch_object($res)) {
+    $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $row->geom);
+    echo "<tr>\n";
+    echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$row->id.'">'.$row->id.'</a></td>';
+    echo '  <td>'.$row->by.'</td>';
+    echo '  <td>'.$row->ref.'</td>';
+    echo '  <td id="gpimg'.$row->id.'" class="click">'.$geom.'</td>';
+    echo '  <td id="gpapi'.$row->id.'" class="click">'.$geom.'</td>';
+    echo "</tr>\n";
+  }
+  echo "</table>";
+
+  pg_free_result($res);
+} //}}}
+
 //cached old result
 if(isset($_GET['cache'])){ //{{{
   echo file_get_contents("/tmp/osm.gp2.html");
@@ -45,6 +75,7 @@ $time_start = microtime(true);
 
 $gpx_file="/tmp/guideposts.gpx";
 $json_file="/tmp/guideposts.json";
+$img_file="/tmp/unused_img.txt";
 
 $gpx_time=file_exists($gpx_file) ? '(data from '.date('d.m.Y H:i', filemtime($gpx_file)).')' : '';
 $json_time=file_exists($json_file) ? '(data from '.date('d.m.Y H:i', filemtime($json_file)).')' : '';
@@ -177,7 +208,11 @@ iframe#hiddenIframe {
 <ul>
 <li><a href="./?fetch">Fetch</a> DB from api.osm.cz to osm.fit.vutbr.cz</li>
 <li><a href="./?analyse">Analyse</a> current DB on osm.fit.vutbr.cz $db_time</li>
-<li><a href="./?all">Show</a> last cached analyzed table (<a href="./?ok">OK</a>, <a href="./?bad">BAD</a>, <a href="./?cor">COR</a>)</li>
+<li>
+  <a href="./?all">Show</a> last cached analyzed table 
+  (<a href="./?ok">OK</a>, <a href="./?bad">noref+noimg</a>,
+  <a href="./?cor">noref+img</a>, <a href="./?img">unused img</a>)
+</li>
 <li><a href="./?get.gpx">Download GPX</a> with guideposts without correct photos $gpx_time</li>
 <li><a href="./?get.json">Download JSON</a> with guideposts without correct photos $json_time</li>
 <li><a href="stats.php">Show guideposts</a> statistics</li>
@@ -355,7 +390,7 @@ if(isset($_GET['analyse'])){ //{{{
         echo '<a href="http://api.openstreetmap.cz/table/id/'.$g_id.'">'.$g_id.'</a>';
         echo '('.$dist.'m, '.$ref.') ';
 
-        $gp_used[$g_id] = 1;
+        if(!isset($img_skip[$g_id])) $gp_used[$g_id] = 1;
       }
       //$cnt = count($close[$n->id]);
       //echo '<td>'.$cnt.'</td>'."\n";
@@ -399,11 +434,16 @@ if(isset($_GET['analyse'])){ //{{{
     pg_query("UPDATE hicheck.gp_stats SET node_total='$node_total',img_total='$img_total',img_used='$img_used',node_ok='$node_ok',node_bad='$node_bad',node_cor='$node_cor' WHERE date='$date'");
   }
 
+  $uimg=fopen($img_file, 'w');
+
   echo "<table>";
   echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
   foreach($gp as $p){
     //skip used images and only left unused ones
     if(isset($gp_used[$p->id])) continue;
+
+    //save to a cache file
+    fwrite($uimg, $p->id.", ");
 
     $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $p->geom);
     echo "<tr>\n";
@@ -415,6 +455,8 @@ if(isset($_GET['analyse'])){ //{{{
     echo "</tr>\n";
   }
   echo "</table>";
+  
+  fclose($uimg);
 
   fwrite($gpx, '</gpx>'."\n");
   fclose($gpx);
@@ -477,6 +519,8 @@ if(isset($_GET['all'])){ //{{{
                              .', <span class="bad">missing photo and ref: '.$gp_class['bad'].'</span>'
                              .', have ref but no photo: '.($total - $gp_class['ok'] - $gp_class['cor'] - $gp_class['bad'])
                              .")</p>\n";
+  
+  show_unused_img();
   exit;
 } // }}}
 
@@ -495,6 +539,12 @@ if(isset($_GET['bad'])){ //{{{
 //show CHECK OSM nodes
 if(isset($_GET['cor'])){ //{{{
   show_nodes("ref = '' AND img != ''", "cor");
+  exit;
+} // }}}
+
+//show unused images
+if(isset($_GET['img'])){ //{{{
+  show_unused_img();
   exit;
 } // }}}
 
