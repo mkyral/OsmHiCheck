@@ -224,6 +224,11 @@ if(isset($_GET['fetch'])){ //{{{
   $query="WITH data AS (SELECT '";
 
   $response = file_get_contents('http://api.openstreetmap.cz/table/all?output=geojson');
+  #for over 5000 photos, it should be much more then 10kB
+  if(strlen($response) < 10000){
+    echo 'Too short reponse from api.osm.cz, ignoring!';
+    return;
+  }
   $query .= $response;
 
   $query .= "'::json AS fc)
