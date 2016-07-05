@@ -40,7 +40,11 @@ function show_unused_img(){ //{{{
 
   $img_ids = rtrim(file_get_contents($img_file), ', ');
   //format is NUM, NUM, NUM, 
-  if(!preg_match('/^[0-9, ]*$/', $img_ids)) $img_ids = '';
+  if(!preg_match('/^[0-9, ]*$/', $img_ids) || strlen($img_ids) == 0) {
+    //bad cache file found, run analyze
+      echo '<p>Bad unused image info found, run analyze to generate from scratch!</p>';
+    return;
+  }
 
   $query="SELECT id, by, ref, ST_AsText(geom) AS geom FROM hicheck.guideposts WHERE id IN (".$img_ids.")";
   $res = pg_query($query);
