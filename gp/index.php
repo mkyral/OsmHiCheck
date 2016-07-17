@@ -321,8 +321,9 @@ if(isset($_GET['analyse'])){ //{{{
   //prepare GPX header
   $gpx=fopen($gpx_file, 'w');
   fwrite($gpx, '<?xml version="1.0" encoding="utf-8" standalone="yes" '.'?'.">\n");
-  fwrite($gpx, '<gpx version="1.1" creator="Locus Android"'."\n");
+  fwrite($gpx, '<gpx version="1.1" creator="OsmHiCheck"'."\n");
   fwrite($gpx, '  xmlns="http://www.topografix.com/GPX/1/1"'."\n");
+  fwrite($gpx, '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'."\n");
   fwrite($gpx, '  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">'."\n");
   
   //build GeoJSON feature collection array
