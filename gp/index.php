@@ -174,7 +174,7 @@ $max_ok_distance = 20;
 
 echo <<<EOF
 <html>
-<header>
+<head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <script type="text/javascript" src="../js/jquery-1.11.2.min.js"></script>
   <script type="text/javascript" src="../js/jquery.jeditable.js"></script>
@@ -186,7 +186,7 @@ echo <<<EOF
         });
     });
   </script>
-</header>
+</head>
 <style>
 td { 
   border: 1px solid black;
