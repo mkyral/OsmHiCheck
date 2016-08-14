@@ -301,7 +301,7 @@ if(isset($_GET['analyse'])){ //{{{
   $query="SELECT id, ST_AsText(geom) AS geom, tags->'ref' AS ref, tags->'name' AS name FROM nodes WHERE tags @> '\"information\"=>\"guidepost\"'::hstore ORDER BY id";
   $res = pg_query($query);
   while ($data = pg_fetch_object($res)) {
-    $no[$data->id] = $data;
+    $nodes[$data->id] = $data;
   }
   pg_free_result($res);
   //echo "Loaded nodes from DB.<br/>\n";
@@ -340,7 +340,7 @@ if(isset($_GET['analyse'])){ //{{{
 
   echo "<table>";
   echo '<tr><th width="7%">node ID</th><th width="11%">node coord</th><th width="12%">node ref</th><th>images</th></tr>'."\n";
-  foreach($no as $n){
+  foreach($nodes as $n){
 
     //check for row class - OK (have ref and img), BAD, CORRECT
     echo "<tr";
@@ -418,22 +418,22 @@ if(isset($_GET['analyse'])){ //{{{
   }
   echo "</table>";
 
-  echo "<p>Guideposts nodes (total:".count($no)
-                             .', <span class="ok">OK: '.$gp_class['ok'].'</span>'
-                             .', <span class="cor">have photo but no ref: '.$gp_class['cor'].'</span>'
-                             .', <span class="bad">missing photo and ref: '.$gp_class['bad'].'</span>'
-                             .', have ref but no photo: '.(count($no) - $gp_class['ok'] - $gp_class['cor'] - $gp_class['bad'])
-                             .")</p>\n";
-  
-  echo "<p>Guideposts photo entries (total:".count($gp).", used: ".count($gp_used).", unused: ".(count($gp)-count($gp_used)).")</p>\n";
-
   //save current stats to DB
-  $node_total = count($no);
+  $node_total = count($nodes);
   $node_ok = $gp_class['ok'];
   $node_cor = $gp_class['cor'];
   $node_bad = $gp_class['bad'];
   $img_total = count($gp);
   $img_used = count($gp_used);
+
+  echo "<p>Guideposts nodes (total:".$node_total
+             .', <span class="ok">OK: '.$node_ok.'</span>'
+             .', <span class="cor">have photo but no ref: '.$node_cor.'</span>'
+             .', <span class="bad">missing photo and ref: '.$node_bad.'</span>'
+             .', have ref but no photo: '.($node_total - $node_ok - $node_cor - $node_bad)
+             .")</p>\n";
+  
+  echo "<p>Guideposts photo entries (total:".$img_total.", used: ".$img_used.", unused: ".($img_total - $img_used).")</p>\n";
 
   $date = date('Ymd');
   $check_q = "SELECT id FROM hicheck.gp_stats WHERE date='$date'";
