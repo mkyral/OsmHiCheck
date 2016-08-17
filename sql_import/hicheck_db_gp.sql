@@ -2,6 +2,23 @@
 -- PostgreSQL database dump
 --
 
+-- Dumped from database version 9.4.9
+-- Dumped by pg_dump version 9.4.9
+-- Started on 2016-08-17 14:06:47 CEST
+
+SET client_encoding = 'UTF8';
+
+--
+-- Name: gp_analyze; Type: TABLE; Schema: hicheck; Owner: xsvana00; Tablespace: 
+--
+
+CREATE TABLE gp_analyze (
+    nodeid bigint NOT NULL,
+    ref character varying(128),
+    geom public.geometry(Point,4326),
+    img character varying(512)
+);
+
 --
 -- Name: gp_stats; Type: TABLE; Schema: hicheck; Owner: xsvana00; Tablespace: 
 --
@@ -17,6 +34,7 @@ CREATE TABLE gp_stats (
     node_cor integer,
     node_bad integer
 );
+
 
 --
 -- Name: guideposts; Type: TABLE; Schema: hicheck; Owner: xsvana00; Tablespace: 
@@ -34,7 +52,24 @@ COMMENT ON COLUMN guideposts.by IS 'author of the photo';
 
 
 --
--- PostgreSQL database dump complete
+-- Name: gp_stats_pkey; Type: CONSTRAINT; Schema: hicheck; Owner: xsvana00; Tablespace: 
 --
 
+ALTER TABLE ONLY gp_stats
+    ADD CONSTRAINT gp_stats_pkey PRIMARY KEY (id);
+
+--
+-- Name: guideposts_pkey; Type: CONSTRAINT; Schema: hicheck; Owner: xsvana00; Tablespace: 
+--
+
+ALTER TABLE ONLY guideposts
+    ADD CONSTRAINT guideposts_pkey PRIMARY KEY (id);
+
+CREATE INDEX guideposts_geom_idx ON guideposts USING gist (geom);
+
+-- Completed on 2016-08-17 14:06:48 CEST
+
+--
+-- PostgreSQL database dump complete
+--
 
