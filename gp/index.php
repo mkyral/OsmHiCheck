@@ -295,8 +295,7 @@ if(isset($_GET['analyse'])){ //{{{
     $gp[$data->id] = $data;
   }
   pg_free_result($res);
-  //echo "Loaded guideposts from DB.<br/>\n";
-  //ob_flush();
+  echo "Loaded ".count($gp)." guideposts from DB.<br/>\n";
 
   $query="SELECT id, ST_AsText(geom) AS geom, tags->'ref' AS ref, tags->'name' AS name FROM nodes WHERE tags @> '\"information\"=>\"guidepost\"'::hstore ORDER BY id";
   $res = pg_query($query);
@@ -304,14 +303,13 @@ if(isset($_GET['analyse'])){ //{{{
     $nodes[$data->id] = $data;
   }
   pg_free_result($res);
-  //echo "Loaded nodes from DB.<br/>\n";
-  //ob_flush();
+  echo "Loaded ".count($nodes)." nodes from DB.<br/>\n";
 
-  $query="SELECT n.id AS n_id, g.id AS g_id, ST_Distance_Sphere(n.geom, g.geom) AS dist
+  $query="SELECT n.id AS n_id, g.id AS g_id, ST_DistanceSphere(n.geom, g.geom) AS dist
     FROM hicheck.guideposts AS g, (
       SELECT id, geom FROM nodes WHERE tags @> '\"information\"=>\"guidepost\"'::hstore
     ) AS n
-    WHERE ST_Distance_Sphere(n.geom, g.geom) < $max_ok_distance;";
+    WHERE ST_DistanceSphere(n.geom, g.geom) < $max_ok_distance;";
   $res = pg_query($query);
   while ($data = pg_fetch_object($res)) {
     $close[$data->n_id][] = $data;
