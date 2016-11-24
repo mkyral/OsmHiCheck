@@ -284,6 +284,11 @@ if(isset($_GET['analyse'])){ //{{{
   foreach($mark as $i){
     $img_skip[$i[0]] = 1;
   }
+  //skip GP tagged zruseno
+  $mark = json_decode(file_get_contents('http://api.openstreetmap.cz/table/hashtag/zruseno?output=json'));
+  foreach($mark as $i){
+    $img_skip[$i[0]] = 1;
+  }
 
   $query="SELECT id, ref, by, ST_AsText(geom) AS geom FROM hicheck.guideposts
           WHERE geom && ST_MakeEnvelope(12.09, 51.06, 18.87, 48.55, 4326)";
