@@ -1,5 +1,7 @@
 <?php
 
+$max_ok_distance = 20.0; //max distance of image and GP to be OK
+
 function show_nodes($where, $class){ //{{{
 
   $query="SELECT nodeid, ref, ST_AsText(geom) AS geom, img FROM hicheck.gp_analyze WHERE ".$where;
@@ -37,6 +39,7 @@ function show_nodes($where, $class){ //{{{
 
 function show_unused_img(){ //{{{
   global $img_file;
+  global $max_ok_distance;
 
   $img_ids = rtrim(file_get_contents($img_file), ', ');
   //format is NUM, NUM, NUM, 
@@ -57,12 +60,15 @@ function show_unused_img(){ //{{{
   while ($row = pg_fetch_object($res)) {
     $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $row->geom);
     $gp_by_ref = '';
-    if ($row->ref != ''){
+    $gp_class = '';
+    if ($row->ref != '' && $row->ref != 'none'){
       $query="SELECT nodeid, ST_DistanceSphere(n.geom, g.geom) AS dist FROM hicheck.guideposts AS g, hicheck.gp_analyze AS n WHERE g.ref = '".$row->ref."' AND n.ref = '".$row->ref."'";
       //error_log("Q: $query");
       $res2 = pg_query($query);
       if ($row2 = pg_fetch_object($res2)){
         $dist = sprintf("%0.2f", $row2->dist);
+        if ($dist < $max_ok_distance) $gp_class = ' class="ok"';
+        if ($dist > 5000) $gp_class = ' class="bad"';
         $gp_by_ref = '('.$dist.'m, <a href="http://localhost:8111/load_object?objects=n'.$row2->nodeid.'">'.$row2->nodeid.'</a>)';
       }
     }
@@ -70,7 +76,7 @@ function show_unused_img(){ //{{{
     echo "<tr>\n";
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$row->id.'">'.$row->id.'</a></td>';
     echo '  <td>'.$row->by.'</td>';
-    echo '  <td>'.$row->ref.$gp_by_ref.'</td>';
+    echo '  <td'.$gp_class.'>'.$row->ref.$gp_by_ref.'</td>';
     echo '  <td id="gpimg'.$row->id.'">'.$geom.'</td>';
     echo "</tr>\n";
   }
@@ -179,8 +185,6 @@ function push_geojson(&$json, $id, $lon, $lat, $name, $class){ //{{{
 
 require_once dirname(__FILE__).'/../db_conf.php';
 $db = pg_connect("host=".SERVER." dbname=".DATABASE." user=".USERNAME." password=".PASSWORD);
-
-$max_ok_distance = 20;
 
 echo <<<EOF
 <html>
