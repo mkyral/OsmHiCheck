@@ -52,7 +52,7 @@ function show_unused_img(){ //{{{
 
   echo "<p>".pg_num_rows($res)." entries in table</p>\n";
   echo "<table>";
-  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
+  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords</th></tr>";
 
   while ($row = pg_fetch_object($res)) {
     $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $row->geom);
@@ -60,8 +60,7 @@ function show_unused_img(){ //{{{
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$row->id.'">'.$row->id.'</a></td>';
     echo '  <td>'.$row->by.'</td>';
     echo '  <td>'.$row->ref.'</td>';
-    echo '  <td id="gpimg'.$row->id.'" class="click">'.$geom.'</td>';
-    echo '  <td id="gpapi'.$row->id.'" class="click">'.$geom.'</td>';
+    echo '  <td id="gpimg'.$row->id.'">'.$geom.'</td>';
     echo "</tr>\n";
   }
   echo "</table>";
@@ -176,16 +175,6 @@ echo <<<EOF
 <html>
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <script type="text/javascript" src="../js/jquery-1.11.2.min.js"></script>
-  <script type="text/javascript" src="../js/jquery.jeditable.js"></script>
-  <script type="text/javascript" charset="utf-8">
-    $(function() {
-      $(".click").editable("move.php",
-        { tooltip : "Click to edit...",
-          style   : "inherit"
-        });
-    });
-  </script>
 </head>
 <style>
 td { 
@@ -450,7 +439,7 @@ if(isset($_GET['analyse'])){ //{{{
   $uimg=fopen($img_file, 'w');
 
   echo "<table>";
-  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords SQL</th><th>coords POST</th></tr>";
+  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords</th></tr>";
   foreach($gp as $p){
     //skip used images and only left unused ones
     if(isset($gp_used[$p->id])) continue;
@@ -463,8 +452,7 @@ if(isset($_GET['analyse'])){ //{{{
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$p->id.'">'.$p->id.'</a></td>';
     echo '  <td>'.$p->by.'</td>';
     echo '  <td>'.$p->ref.'</td>';
-    echo '  <td id="gpimg'.$p->id.'" class="click">'.$geom.'</td>';
-    echo '  <td id="gpapi'.$p->id.'" class="click">'.$geom.'</td>';
+    echo '  <td id="gpimg'.$p->id.'">'.$geom.'</td>';
     echo "</tr>\n";
   }
   echo "</table>";
