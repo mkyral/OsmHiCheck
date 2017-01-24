@@ -56,10 +56,21 @@ function show_unused_img(){ //{{{
 
   while ($row = pg_fetch_object($res)) {
     $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $row->geom);
+    $gp_by_ref = '';
+    if ($row->ref != ''){
+      $query="SELECT nodeid, ST_DistanceSphere(n.geom, g.geom) AS dist FROM hicheck.guideposts AS g, hicheck.gp_analyze AS n WHERE g.ref = '".$row->ref."' AND n.ref = '".$row->ref."'";
+      //error_log("Q: $query");
+      $res2 = pg_query($query);
+      if ($row2 = pg_fetch_object($res2)){
+        $dist = sprintf("%0.2f", $row2->dist);
+        $gp_by_ref = '('.$dist.'m, <a href="http://localhost:8111/load_object?objects=n'.$row2->nodeid.'">'.$row2->nodeid.'</a>)';
+      }
+    }
+
     echo "<tr>\n";
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$row->id.'">'.$row->id.'</a></td>';
     echo '  <td>'.$row->by.'</td>';
-    echo '  <td>'.$row->ref.'</td>';
+    echo '  <td>'.$row->ref.$gp_by_ref.'</td>';
     echo '  <td id="gpimg'.$row->id.'">'.$geom.'</td>';
     echo "</tr>\n";
   }
@@ -437,27 +448,15 @@ if(isset($_GET['analyse'])){ //{{{
   }
 
   $uimg=fopen($img_file, 'w');
-
-  echo "<table>";
-  echo "<tr><th>img ID</th><th>by</th><th>ref</th><th>coords</th></tr>";
   foreach($gp as $p){
     //skip used images and only left unused ones
     if(isset($gp_used[$p->id])) continue;
 
     //save to a cache file
     fwrite($uimg, $p->id.", ");
-
-    $geom = preg_replace('/POINT\(([-0-9.]{1,9})[0-9]* ([-0-9.]{1,9})[0-9]*\)/', '$2 $1', $p->geom);
-    echo "<tr>\n";
-    echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$p->id.'">'.$p->id.'</a></td>';
-    echo '  <td>'.$p->by.'</td>';
-    echo '  <td>'.$p->ref.'</td>';
-    echo '  <td id="gpimg'.$p->id.'">'.$geom.'</td>';
-    echo "</tr>\n";
   }
-  echo "</table>";
-  
   fclose($uimg);
+  show_unused_img();
 
   fwrite($gpx, '</gpx>'."\n");
   fclose($gpx);
