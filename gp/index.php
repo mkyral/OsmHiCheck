@@ -49,7 +49,13 @@ function show_unused_img(){ //{{{
     return;
   }
 
+
   $query="SELECT id, by, ref, ST_AsText(geom) AS geom FROM hicheck.guideposts WHERE id IN (".$img_ids.")";
+  if(isset($_GET['by'])){
+    $query .= " AND by = '".pg_escape_string($_GET['by'])."'";
+    //error_log("Q: $query");
+  }
+
   $res = pg_query($query);
   $total = pg_num_rows($res);
 
@@ -62,7 +68,7 @@ function show_unused_img(){ //{{{
     $gp_by_ref = '';
     $gp_class = '';
     if ($row->ref != '' && $row->ref != 'none'){
-      $query="SELECT nodeid, ST_DistanceSphere(n.geom, g.geom) AS dist FROM hicheck.guideposts AS g, hicheck.gp_analyze AS n WHERE g.ref = '".$row->ref."' AND n.ref = '".$row->ref."'";
+      $query="SELECT nodeid, ST_DistanceSphere(n.geom, g.geom) AS dist FROM hicheck.guideposts AS g, hicheck.gp_analyze AS n WHERE g.id = '".$row->id."' AND n.ref = '".$row->ref."' ORDER BY dist";
       //error_log("Q: $query");
       $res2 = pg_query($query);
       if ($row2 = pg_fetch_object($res2)){
@@ -71,11 +77,12 @@ function show_unused_img(){ //{{{
         if ($dist > 5000) $gp_class = ' class="bad"';
         $gp_by_ref = '('.$dist.'m, <a href="http://localhost:8111/load_object?objects=n'.$row2->nodeid.'">'.$row2->nodeid.'</a>)';
       }
+      pg_free_result($res2);
     }
 
     echo "<tr>\n";
     echo '  <td><a href="http://api.openstreetmap.cz/table/id/'.$row->id.'">'.$row->id.'</a></td>';
-    echo '  <td>'.$row->by.'</td>';
+    echo '  <td><a href="?img&by='.$row->by.'">'.$row->by.'</a></td>';
     echo '  <td'.$gp_class.'>'.$row->ref.$gp_by_ref.'</td>';
     echo '  <td id="gpimg'.$row->id.'">'.$geom.'</td>';
     echo "</tr>\n";
